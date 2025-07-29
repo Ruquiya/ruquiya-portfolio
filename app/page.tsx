@@ -115,7 +115,6 @@ const InteractiveBackground: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
         saturation={isDarkMode ? 0 : 1.5}
         fade 
         speed={0.3} 
-        color={isDarkMode ? '#d8b4fe' : '#2563eb'}
       />
       <group ref={groupRef}>
         <Sparkles 
@@ -123,7 +122,6 @@ const InteractiveBackground: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
           scale={5} 
           size={isDarkMode ? 2 : 3}
           speed={0.1} 
-          color={isDarkMode ? '#d8b4fe' : '#3b82f6'}
         />
       </group>
       <ambientLight intensity={isDarkMode ? 0.2 : 0.6} />
