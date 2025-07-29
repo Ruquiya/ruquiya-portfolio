@@ -5,7 +5,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaGithub, FaEnvelope, FaSun, FaMoon, FaDownload, FaArrowDown, FaPhone, FaCode, FaRobot, FaDatabase, FaTools, FaExternalLinkAlt, FaBars } from 'react-icons/fa';
+import { FaGithub, FaEnvelope, FaSun, FaMoon, FaDownload, FaArrowDown, FaPhone, FaCode, FaRobot, FaDatabase, FaTools, FaExternalLinkAlt, FaBars, FaRocket } from 'react-icons/fa';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Stars, Sparkles } from '@react-three/drei';
@@ -458,7 +458,7 @@ const ProjectsSection: React.FC<{ isDarkMode: boolean; projects: Project[] }> = 
         viewport={{ once: true }}
         transition={{ delay: 0.1, duration: 0.5 }}
       >
-        Explore my latest work, showcasing innovation and technical expertise.
+        Explore my latest work, showcasing innovation and technical expertise. Check out my live deployed project!
       </motion.p>
     </div>
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -467,13 +467,26 @@ const ProjectsSection: React.FC<{ isDarkMode: boolean; projects: Project[] }> = 
           key={project.title}
           className={`rounded-xl overflow-hidden ${
             isDarkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white/90 border-gray-300'
-          } backdrop-blur-md border shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-102 hover:bg-opacity-90`}
+          } backdrop-blur-md border shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-102 hover:bg-opacity-90 relative`}
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-50px' }}
           whileHover={{ y: -5, scale: 1.02 }}
           transition={{ duration: 0.3 }}
         >
+          {/* Badge for Deployed Project */}
+          {project.link === 'https://airguard-final.vercel.app/' && (
+            <div className="absolute top-4 right-4 z-10">
+              <span
+                className={`px-3 py-1 text-xs font-semibold rounded-full flex items-center gap-1 ${
+                  isDarkMode ? 'bg-cyan-500/20 text-cyan-300' : 'bg-purple-500/20 text-purple-700'
+                }`}
+              >
+                <FaRocket size={12} />
+                Live Demo
+              </span>
+            </div>
+          )}
           <div className="relative w-full h-48 sm:h-56 md:h-64 overflow-hidden group">
             <Image
               src={project.image}
@@ -513,18 +526,20 @@ const ProjectsSection: React.FC<{ isDarkMode: boolean; projects: Project[] }> = 
                 } flex items-center gap-1 transition-all duration-300 hover:scale-105 hover:underline`}
                 aria-label={`View ${project.title} project`}
               >
-                View Project <FaExternalLinkAlt size={12} />
+                {project.link.includes('github') ? 'View on GitHub' : 'Visit Live Site'} <FaExternalLinkAlt size={12} />
               </Link>
-              <Link
-                href={project.link}
-                target="_blank"
-                className={`text-sm ${
-                  isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
-                } flex items-center gap-1 transition-all duration-300 hover:scale-105 hover:underline`}
-                aria-label={`View ${project.title} on GitHub`}
-              >
-                GitHub <FaGithub size={14} />
-              </Link>
+              {project.link.includes('github') && (
+                <Link
+                  href={project.link}
+                  target="_blank"
+                  className={`text-sm ${
+                    isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
+                  } flex items-center gap-1 transition-all duration-300 hover:scale-105 hover:underline`}
+                  aria-label={`View ${project.title} on GitHub`}
+                >
+                  GitHub <FaGithub size={14} />
+                </Link>
+              )}
             </div>
           </div>
         </motion.div>
@@ -1051,7 +1066,7 @@ const Portfolio: React.FC = () => {
       title: 'ORAPMS',
       description: 'A property management system built with ASP.NET to manage rooms, tenants, and team operations efficiently.',
       year: '2024',
-      link: 'https://github.com/Ruquiya?tab=repositories',
+      link: 'https://github.com/Ruquiya/ORAPMS',
       image: '/images/ORAPMS.png',
       tags: ['ASP.NET', 'Project Management', 'Team Collaboration'],
     },
