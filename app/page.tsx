@@ -55,30 +55,78 @@ interface Language {
 const InteractiveBackground: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const groupRef = useRef<THREE.Group>(null);
   const mouse = useRef({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       mouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
     };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (event.touches.length > 0) {
+        mouse.current.x = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
+        mouse.current.y = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
+      }
+    };
+
+    if (!isMobile) {
+      window.addEventListener('mousemove', handleMouseMove);
+    } else {
+      window.addEventListener('touchmove', handleTouchMove);
+    }
+
+    return () => {
+      if (!isMobile) {
+        window.removeEventListener('mousemove', handleMouseMove);
+      } else {
+        window.removeEventListener('touchmove', handleTouchMove);
+      }
+    };
+  }, [isMobile]);
 
   useFrame(() => {
     if (groupRef.current) {
-      groupRef.current.position.x = mouse.current.x * 0.5;
-      groupRef.current.position.y = mouse.current.y * 0.5;
+      groupRef.current.position.x += (mouse.current.x * 0.5 - groupRef.current.position.x) * 0.1;
+      groupRef.current.position.y += (mouse.current.y * 0.5 - groupRef.current.position.y) * 0.1;
     }
   });
 
   return (
     <>
-      <Stars radius={50} depth={25} count={800} factor={2} saturation={isDarkMode ? 0 : 0.5} fade speed={0.3} />
+      <Stars 
+        radius={50} 
+        depth={25} 
+        count={isMobile ? 800 : 1200}
+        factor={isDarkMode ? 2 : 5}
+        saturation={isDarkMode ? 0 : 1.5}
+        fade 
+        speed={0.3} 
+        color={isDarkMode ? '#d8b4fe' : '#2563eb'}
+      />
       <group ref={groupRef}>
-        <Sparkles count={15} scale={3} size={2} speed={0.1} color={isDarkMode ? '#d8b4fe' : '#60a5fa'} />
+        <Sparkles 
+          count={isMobile ? 15 : 25} 
+          scale={5} 
+          size={isDarkMode ? 2 : 3}
+          speed={0.1} 
+          color={isDarkMode ? '#d8b4fe' : '#3b82f6'}
+        />
       </group>
-      <ambientLight intensity={isDarkMode ? 0.2 : 0.4} />
+      <ambientLight intensity={isDarkMode ? 0.2 : 0.6} />
     </>
   );
 };
@@ -116,13 +164,12 @@ const Header: React.FC<{ isDarkMode: boolean; toggleTheme: () => void }> = ({ is
           Ruquiya Nasir
         </motion.h1>
 
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
             <motion.button
               key={item.id}
               className={`text-sm font-medium capitalize ${
-                isDarkMode ? 'text-gray-200 hover:text-cyan-400 hover:bg-gray-800/50' : 'text-gray-800 hover:text-purple-600 hover:bg-gray-100/50'
+                isDarkMode ? 'text-gray-200 hover:text-cyan-400 hover:bg-gray-800/50' : 'text-gray-700 hover:text-purple-600 hover:bg-gray-100/50'
               } transition-all duration-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500`}
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
@@ -135,7 +182,7 @@ const Header: React.FC<{ isDarkMode: boolean; toggleTheme: () => void }> = ({ is
           <div className="flex items-center gap-3">
             <motion.button
               className={`p-2 rounded-full ${
-                isDarkMode ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                isDarkMode ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               } transition-all duration-300 hover:shadow-lg`}
               onClick={toggleTheme}
               whileHover={{ scale: 1.1, rotate: 360 }}
@@ -157,7 +204,6 @@ const Header: React.FC<{ isDarkMode: boolean; toggleTheme: () => void }> = ({ is
           </div>
         </nav>
 
-        {/* Mobile Menu Button */}
         <button
           className="md:hidden p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -167,7 +213,6 @@ const Header: React.FC<{ isDarkMode: boolean; toggleTheme: () => void }> = ({ is
         </button>
       </div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -182,7 +227,7 @@ const Header: React.FC<{ isDarkMode: boolean; toggleTheme: () => void }> = ({ is
                 <motion.button
                   key={item.id}
                   className={`block w-full text-left px-4 py-2 text-sm font-medium ${
-                    isDarkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-800 hover:bg-gray-100'
+                    isDarkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                   } rounded-md transition-all duration-300 hover:shadow-md`}
                   onClick={() => scrollToSection(item.id)}
                   whileHover={{ x: 5, scale: 1.02 }}
@@ -195,7 +240,7 @@ const Header: React.FC<{ isDarkMode: boolean; toggleTheme: () => void }> = ({ is
               <div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-700">
                 <button
                   className={`flex items-center gap-2 px-4 py-2 ${
-                    isDarkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-800 hover:bg-gray-100'
+                    isDarkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                   } transition-all duration-300 rounded-md`}
                   onClick={toggleTheme}
                   aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
@@ -261,7 +306,7 @@ const HeroSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
           Ruquiya Nasir
         </motion.h1>
         <motion.h2
-          className="text-xl sm:text-2xl font-medium text-gray-600 dark:text-gray-300 mb-6"
+          className="text-xl sm:text-2xl font-medium text-gray-800 dark:text-gray-300 mb-6"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
@@ -269,7 +314,7 @@ const HeroSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
           Full Stack Developer & AI Specialist
         </motion.h2>
         <motion.p
-          className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed"
+          className="text-base sm:text-lg text-gray-400 dark:text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.5 }}
@@ -292,7 +337,7 @@ const HeroSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
           <Link
             href="#contact"
             className={`px-6 py-3 border ${
-              isDarkMode ? 'border-gray-600 text-gray-200 hover:bg-gray-700/50' : 'border-gray-400 text-gray-800 hover:bg-gray-100/50'
+              isDarkMode ? 'border-gray-600 text-gray-200 hover:bg-gray-700/50' : 'border-gray-400 text-gray-700 hover:bg-gray-100/50'
             } rounded-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-md`}
             aria-label="Contact Me"
           >
@@ -334,7 +379,7 @@ const SkillsSection: React.FC<{ isDarkMode: boolean; skills: Skill[] }> = ({ isD
           Technical Skills
         </motion.h2>
         <motion.p
-          className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
+          className="text-lg text-gray-400 dark:text-gray-300 max-w-2xl mx-auto"
           initial={{ y: 20, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
@@ -407,7 +452,7 @@ const ProjectsSection: React.FC<{ isDarkMode: boolean; projects: Project[] }> = 
         Featured Projects
       </motion.h2>
       <motion.p
-        className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
+        className="text-lg text-gray-400 dark:text-gray-300 max-w-2xl mx-auto"
         initial={{ y: 20, opacity: 0 }}
         whileInView={{ y: 0, opacity: 1 }}
         viewport={{ once: true }}
@@ -446,7 +491,7 @@ const ProjectsSection: React.FC<{ isDarkMode: boolean; projects: Project[] }> = 
             </div>
           </div>
           <div className="p-6">
-            <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">{project.description}</p>
+            <p className="text-gray-400 dark:text-gray-300 mb-4 text-sm leading-relaxed">{project.description}</p>
             <div className="flex flex-wrap gap-2 mb-4">
               {project.tags.map((tag) => (
                 <span
@@ -509,7 +554,7 @@ const ExperienceSection: React.FC<{ isDarkMode: boolean; experiences: Experience
         Professional Experience
       </motion.h2>
       <motion.p
-        className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
+        className="text-lg text-gray-400 dark:text-gray-300 max-w-2xl mx-auto"
         initial={{ y: 20, opacity: 0 }}
         whileInView={{ y: 0, opacity: 1 }}
         viewport={{ once: true }}
@@ -535,8 +580,8 @@ const ExperienceSection: React.FC<{ isDarkMode: boolean; experiences: Experience
             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{exp.title}</h3>
             <span className="text-sm text-purple-600 dark:text-cyan-400">{exp.period}</span>
           </div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-3">{exp.company}</p>
-          <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm font-medium text-gray-400 dark:text-gray-300 mb-3">{exp.company}</p>
+          <ul className="space-y-2 text-sm text-gray-400 dark:text-gray-300">
             {exp.details.map((detail, i) => (
               <li key={i} className="flex items-start">
                 <span className="text-purple-600 dark:text-cyan-400 mr-2 mt-1">•</span>
@@ -550,13 +595,163 @@ const ExperienceSection: React.FC<{ isDarkMode: boolean; experiences: Experience
   </motion.section>
 );
 
+// Education Section Component
+const EducationSection: React.FC<{ isDarkMode: boolean; education: Education[] }> = ({ isDarkMode, education }) => (
+  <motion.section
+    id="education"
+    className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto"
+    initial={{ opacity: 0 }}
+    whileInView={{ opacity: 1 }}
+    viewport={{ once: true, margin: '-100px' }}
+    transition={{ duration: 0.5 }}
+  >
+    <div className="text-center mb-12">
+      <motion.h2
+        className="text-3xl sm:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-cyan-500 transition-transform duration-300 hover:scale-105"
+        initial={{ y: 20, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+      >
+        Education
+      </motion.h2>
+      <motion.p
+        className="text-lg text-gray-400 dark:text-gray-300 max-w-2xl mx-auto"
+        initial={{ y: 20, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.1, duration: 0.5 }}
+      >
+        My academic foundation in computer science and technology.
+      </motion.p>
+    </div>
+    <div className="space-y-6">
+      {education.map((edu) => (
+        <motion.div
+          key={edu.institution}
+          className={`p-6 rounded-xl ${
+            isDarkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white/90 border-gray-300'
+          } backdrop-blur-md border shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-102 hover:bg-opacity-90`}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.5 }}
+        >
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{edu.institution}</h3>
+          <p className="text-sm text-purple-600 dark:text-cyan-400">{edu.degree}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-300">{edu.period} | {edu.details}</p>
+        </motion.div>
+      ))}
+    </div>
+  </motion.section>
+);
+
+// Certifications Section Component
+const CertificationsSection: React.FC<{ isDarkMode: boolean; certifications: Certification[] }> = ({ isDarkMode, certifications }) => (
+  <motion.section
+    id="certifications"
+    className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto"
+    initial={{ opacity: 0 }}
+    whileInView={{ opacity: 1 }}
+    viewport={{ once: true, margin: '-100px' }}
+    transition={{ duration: 0.5 }}
+  >
+    <div className="text-center mb-12">
+      <motion.h2
+        className="text-3xl sm:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-cyan-500 transition-transform duration-300 hover:scale-105"
+        initial={{ y: 20, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+      >
+        Certifications
+      </motion.h2>
+      <motion.p
+        className="text-lg text-gray-400 dark:text-gray-300 max-w-2xl mx-auto"
+        initial={{ y: 20, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.1, duration: 0.5 }}
+      >
+        Professional credentials that highlight my expertise and commitment to learning.
+      </motion.p>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {certifications.map((cert) => (
+        <motion.div
+          key={cert.title}
+          className={`p-6 rounded-xl ${
+            isDarkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white/90 border-gray-300'
+          } backdrop-blur-md border shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-102 hover:bg-opacity-90`}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.5 }}
+        >
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{cert.title}</h3>
+          <p className="text-sm text-gray-400 dark:text-gray-300">{cert.issuer}{cert.year ? `, ${cert.year}` : ''}</p>
+        </motion.div>
+      ))}
+    </div>
+  </motion.section>
+);
+
+// Languages Section Component
+const LanguagesSection: React.FC<{ isDarkMode: boolean; languages: Language[] }> = ({ isDarkMode, languages }) => (
+  <motion.section
+    id="languages"
+    className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto"
+    initial={{ opacity: 0 }}
+    whileInView={{ opacity: 1 }}
+    viewport={{ once: true, margin: '-100px' }}
+    transition={{ duration: 0.5 }}
+  >
+    <div className="text-center mb-12">
+      <motion.h2
+        className="text-3xl sm:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-cyan-500 transition-transform duration-300 hover:scale-105"
+        initial={{ y: 20, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+      >
+        Languages
+      </motion.h2>
+      <motion.p
+        className="text-lg text-gray-400 dark:text-gray-300 max-w-2xl mx-auto"
+        initial={{ y: 20, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.1, duration: 0.5 }}
+      >
+        My proficiency in multiple languages enhances my ability to collaborate globally.
+      </motion.p>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      {languages.map((lang) => (
+        <motion.div
+          key={lang.language}
+          className={`p-6 rounded-xl ${
+            isDarkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white/90 border-gray-300'
+          } backdrop-blur-md border shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-102 hover:bg-opacity-90`}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.5 }}
+        >
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{lang.language}</h3>
+          <p className="text-sm text-gray-400 dark:text-gray-300">{lang.level}</p>
+        </motion.div>
+      ))}
+    </div>
+  </motion.section>
+);
+
 // Contact Section Component
 const ContactSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [formStatus, setFormStatus] = useState<{ type: 'success' | 'error' | 'loading' | null; message: string | null }>({ type: null, message: null });
 
   useEffect(() => {
-    // Clear form status message after 5 seconds
     if (formStatus.message) {
       const timer = setTimeout(() => {
         setFormStatus({ type: null, message: null });
@@ -570,7 +765,6 @@ const ContactSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     setFormStatus({ type: 'loading', message: 'Sending your message...' });
 
     try {
-      // Validate input client-side
       if (!formData.name || !formData.email || !formData.message) {
         throw new Error('All fields are required');
       }
@@ -626,7 +820,7 @@ const ContactSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
           Get In Touch
         </motion.h2>
         <motion.p
-          className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
+          className="text-lg text-gray-400 dark:text-gray-300 max-w-2xl mx-auto"
           initial={{ y: 20, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
@@ -654,7 +848,7 @@ const ContactSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
                 <FaEnvelope size={18} />
               </div>
               <div>
-                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Email</h4>
+                <h4 className="text-sm font-medium text-gray-400 dark:text-gray-400">Email</h4>
                 <a
                   href="mailto:ruquiyanasir57@gmail.com"
                   className={`text-sm ${
@@ -673,7 +867,7 @@ const ContactSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
                 <FaPhone size={18} />
               </div>
               <div>
-                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone</h4>
+                <h4 className="text-sm font-medium text-gray-400 dark:text-gray-400">Phone</h4>
                 <a
                   href="tel:+923345302913"
                   className={`text-sm ${
@@ -692,7 +886,7 @@ const ContactSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
                 <FaGithub size={18} />
               </div>
               <div>
-                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">GitHub</h4>
+                <h4 className="text-sm font-medium text-gray-400 dark:text-gray-400">GitHub</h4>
                 <a
                   href="https://github.com/Ruquiya"
                   target="_blank"
@@ -721,7 +915,7 @@ const ContactSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
             <div>
               <label
                 htmlFor="name"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-sm font-medium text-gray-400 dark:text-gray-300 mb-1"
               >
                 Name
               </label>
@@ -741,7 +935,7 @@ const ContactSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-sm font-medium text-gray-400 dark:text-gray-300 mb-1"
               >
                 Email
               </label>
@@ -761,7 +955,7 @@ const ContactSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
             <div>
               <label
                 htmlFor="message"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-sm font-medium text-gray-400 dark:text-gray-300 mb-1"
               >
                 Message
               </label>
@@ -806,13 +1000,13 @@ const ContactSection: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     </motion.section>
   );
 };
+
 // Main Portfolio Component
 const Portfolio: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Check user's preferred color scheme
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setIsDarkMode(prefersDark);
     const timer = setTimeout(() => setIsLoading(false), 800);
@@ -839,27 +1033,27 @@ const Portfolio: React.FC = () => {
     },
     {
       category: 'Database & DevOps',
-      items: ['MySQL', 'MongoDB', 'PostgreSQL','Git'],
+      items: ['MySQL', 'MongoDB', 'PostgreSQL', 'Git'],
       icon: <FaTools />,
     },
   ], []);
 
   const projects = useMemo<Project[]>(() => [
     {
-     title: 'AirGuard',
-  description: 'A MERN stack-based real-time air quality monitoring system with predictive analytics and interactive dashboards.',
-  year: '2025',
-  link: 'https://github.com/Ruquiya?tab=repositories',
-  image: '/images/airguard.png', 
-  tags: ['React', 'Node.js', 'Express', 'MongoDB', 'Tailwind CSS', 'ARIMA', 'Holt-Winters', 'AI Chatbot', 'IoT']
+      title: 'AirGuard',
+      description: 'A MERN stack-based real-time air quality monitoring system with predictive analytics and interactive dashboards.',
+      year: '2025',
+      link: 'https://airguard-final.vercel.app/',
+      image: '/images/airguard.png',
+      tags: ['React', 'Node.js', 'Express', 'MongoDB', 'Tailwind CSS', 'ARIMA', 'Holt-Winters', 'AI Chatbot', 'IoT'],
     },
     {
-     title: 'ORAPMS',
-  description: 'A property management system built with ASP.NET to manage rooms, tenants, and team operations efficiently.',
-  year: '2024',
-  link: 'https://github.com/Ruquiya?tab=repositories',
-  image: '/images/ORAPMS.png',
-  tags: ['ASP.NET', 'Project Management', 'Team Collaboration']
+      title: 'ORAPMS',
+      description: 'A property management system built with ASP.NET to manage rooms, tenants, and team operations efficiently.',
+      year: '2024',
+      link: 'https://github.com/Ruquiya?tab=repositories',
+      image: '/images/ORAPMS.png',
+      tags: ['ASP.NET', 'Project Management', 'Team Collaboration'],
     },
     {
       title: 'Fresh Cart',
@@ -879,20 +1073,19 @@ const Portfolio: React.FC = () => {
     },
     {
       title: 'Traffic Management System',
-  description: 'A database-driven traffic management project featuring ER diagrams, relational schemas, and SQL-based data handling.',
-  year: '2022',
-  link: 'https://github.com/Ruquiya/TrafficSquad',
-  image: '/images/traffic.png',
-  tags: ['SQL', 'ER Diagram', 'Relational Model', 'Database Design']
+      description: 'A database-driven traffic management project featuring ER diagrams, relational schemas, and SQL-based data handling.',
+      year: '2022',
+      link: 'https://github.com/Ruquiya/TrafficSquad',
+      image: '/images/traffic.png',
+      tags: ['SQL', 'ER Diagram', 'Relational Model', 'Database Design'],
     },
-        {
-  title: 'Bookstore Management System',
-  description: 'An object-oriented C++ application for managing bookstore inventory, sales, and customer records with a console-based interface.',
-  year: '2022',
-  link: 'https://github.com/Ruquiya/Bookstore-Management-System',
-  image: '/images/bookstore.png', // Make sure this path is correct
-  tags: ['C++', 'OOP', 'File Handling', 'Console Application']
-
+    {
+      title: 'Bookstore Management System',
+      description: 'An object-oriented C++ application for managing bookstore inventory, sales, and customer records with a console-based interface.',
+      year: '2022',
+      link: 'https://github.com/Ruquiya/Bookstore-Management-System',
+      image: '/images/bookstore.png',
+      tags: ['C++', 'OOP', 'File Handling', 'Console Application'],
     },
   ], []);
 
@@ -966,7 +1159,6 @@ const Portfolio: React.FC = () => {
         <script src="https://cdn.tailwindcss.com"></script>
       </Head>
 
-      {/* Loading Animation */}
       <AnimatePresence>
         {isLoading && (
           <motion.div
@@ -999,165 +1191,25 @@ const Portfolio: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Three.js Background */}
       <div className="fixed inset-0 z-0">
         <Canvas>
           <InteractiveBackground isDarkMode={isDarkMode} />
         </Canvas>
       </div>
 
-      {/* Header */}
       <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
 
-      {/* Main Content */}
       <main className="relative z-10">
         <HeroSection isDarkMode={isDarkMode} />
         <SkillsSection isDarkMode={isDarkMode} skills={skills} />
         <ProjectsSection isDarkMode={isDarkMode} projects={projects} />
         <ExperienceSection isDarkMode={isDarkMode} experiences={experiences} />
-        <motion.section
-          id="education"
-          className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: '-100px' }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="text-center mb-12">
-            <motion.h2
-              className="text-3xl sm:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-cyan-500 transition-transform duration-300 hover:scale-105"
-              initial={{ y: 20, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              Education
-            </motion.h2>
-            <motion.p
-              className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
-              initial={{ y: 20, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1, duration: 0.5 }}
-            >
-              My academic foundation in computer science and technology.
-            </motion.p>
-          </div>
-          <div className="space-y-6">
-            {education.map((edu) => (
-              <motion.div
-                key={edu.institution}
-                className={`p-6 rounded-xl ${
-                  isDarkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white/90 border-gray-300'
-                } backdrop-blur-md border shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-102 hover:bg-opacity-90`}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-50px' }}
-                transition={{ duration: 0.5 }}
-              >
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{edu.institution}</h3>
-                <p className="text-sm text-purple-600 dark:text-cyan-400">{edu.degree}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-300">{edu.period} | {edu.details}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-        <motion.section
-          id="certifications"
-          className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: '-100px' }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="text-center mb-12">
-            <motion.h2
-              className="text-3xl sm:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-cyan-500 transition-transform duration-300 hover:scale-105"
-              initial={{ y: 20, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              Certifications
-            </motion.h2>
-            <motion.p
-              className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
-              initial={{ y: 20, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1, duration: 0.5 }}
-            >
-              Professional credentials that highlight my expertise and commitment to learning.
-            </motion.p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {certifications.map((cert) => (
-              <motion.div
-                key={cert.title}
-                className={`p-6 rounded-xl ${
-                  isDarkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white/90 border-gray-300'
-                } backdrop-blur-md border shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-102 hover:bg-opacity-90`}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-50px' }}
-                transition={{ duration: 0.5 }}
-              >
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{cert.title}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">{cert.issuer}{cert.year ? `, ${cert.year}` : ''}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-        <motion.section
-          id="languages"
-          className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: '-100px' }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="text-center mb-12">
-            <motion.h2
-              className="text-3xl sm:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-cyan-500 transition-transform duration-300 hover:scale-105"
-              initial={{ y: 20, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              Languages
-            </motion.h2>
-            <motion.p
-              className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
-              initial={{ y: 20, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1, duration: 0.5 }}
-            >
-              My proficiency in multiple languages enhances my ability to collaborate globally.
-            </motion.p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {languages.map((lang) => (
-              <motion.div
-                key={lang.language}
-                className={`p-6 rounded-xl ${
-                  isDarkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white/90 border-gray-300'
-                } backdrop-blur-md border shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-102 hover:bg-opacity-90`}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-50px' }}
-                transition={{ duration: 0.5 }}
-              >
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{lang.language}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">{lang.level}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
+        <EducationSection isDarkMode={isDarkMode} education={education} />
+        <CertificationsSection isDarkMode={isDarkMode} certifications={certifications} />
+        <LanguagesSection isDarkMode={isDarkMode} languages={languages} />
         <ContactSection isDarkMode={isDarkMode} />
       </main>
 
-      {/* Footer */}
       <footer className="py-8 text-center relative z-10">
         <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           © 2025 Ruquiya Nasir. All rights reserved.
